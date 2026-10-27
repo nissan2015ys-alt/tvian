@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><title>Эфир — IPTV плеер</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f4f8;--panel:#fff;--panel2:#eceef5;--tx:#171a24;--mut:#6b7185;--ac:#6c5ce7;--ac2:#00b8d9;--bd:#dfe2ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0f17;--panel:#151826;--panel2:#1d2133;--tx:#eef0f8;--mut:#8a90a8;--bd:#262b40;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0f17;--panel:#151826;--panel2:#1d2133;--tx:#eef0f8;--mut:#8a90a8;--bd:#262b40;color-scheme:dark}
+*{box-sizing:border-box;margin:0}html,body{height:100%}
+body{background:var(--bg);color:var(--tx);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+.app{display:grid;grid-template-columns:200px 330px 1fr;height:100%;gap:12px;padding:12px}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.brand{font-weight:800;font-size:20px;padding:18px 18px 8px;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.cats{padding:8px;display:flex;flex-direction:column;gap:2px;overflow:auto}
+.cat{padding:10px 12px;border-radius:12px;cursor:pointer;color:var(--mut);border:0;background:none;text-align:left;font:inherit;display:flex;justify-content:space-between}
+.cat:hover{background:var(--panel2)}.cat.on{background:linear-gradient(90deg,var(--ac),#8e7dff);color:#fff}
+.side-b{margin-top:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.btn{border:1px solid var(--bd);background:var(--panel2);color:var(--tx);padding:10px;border-radius:12px;cursor:pointer;font:inherit}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.search{margin:12px;padding:11px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--panel2);color:var(--tx);font:inherit;outline:0}
+.search:focus{border-color:var(--ac)}
+.list{overflow:auto;padding:0 8px 8px;display:flex;flex-direction:column;gap:4px}
+.ch{display:flex;gap:12px;align-items:center;padding:9px;border-radius:14px;cursor:pointer;border:1px solid transparent}
+.ch:hover{background:var(--panel2)}.ch.on{background:var(--panel2);border-color:var(--ac)}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;flex:none}
+.logo img{width:100%;height:100%;object-fit:contain;padding:4px}.ci{flex:1;min-width:0}.cn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:3px;background:var(--bd);border-radius:2px;margin-top:5px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.star{background:none;border:0;cursor:pointer;font-size:18px;color:var(--mut)}.star.on{color:#f5b301}
+.main{display:flex;flex-direction:column;gap:12px;min-height:0}
+.player{position:relative;aspect-ratio:16/9;max-height:62%;background:#000;border-radius:18px;overflow:hidden;width:100%}
+.player video,.demo{position:absolute;inset:0;width:100%;height:100%}
+.demo{display:grid;place-items:center;text-align:center;color:#fff;background:linear-gradient(130deg,var(--g1),var(--g2),var(--g1));background-size:300% 300%;animation:mv 9s ease infinite}
+@keyframes mv{50%{background-position:100% 50%}}
+.demo b{font-size:clamp(20px,4vw,40px)}.demo small{display:block;opacity:.75;margin-top:6px}
+.ov{position:absolute;inset:auto 0 0 0;padding:40px 20px 16px;background:linear-gradient(transparent,rgba(0,0,0,.8));color:#fff;transition:opacity .4s}
+.ov.hide{opacity:0}.ov h2{font-size:20px}.ov p{opacity:.8;font-size:13px}
+.ov .bar{background:rgba(255,255,255,.25);margin:8px 0}
+.ctl{display:flex;gap:8px;margin-top:6px}.ctl button{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:10px;padding:7px 12px;cursor:pointer;font:inherit}
+.epg{flex:1;overflow:auto;padding:14px 16px}.epg h3{margin-bottom:10px}
+.pr{display:flex;gap:14px;padding:10px 12px;border-radius:12px}.pr.now{background:var(--panel2);border-left:3px solid var(--ac)}
+.pt{color:var(--mut);width:48px;font-variant-numeric:tabular-nums}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:9;padding:16px}
+.modal.on{display:grid}.mb{max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--bd);border-radius:18px;padding:20px;width:min(520px,100%);display:flex;flex-direction:column;gap:10px}
+textarea{min-height:140px;border-radius:12px;border:1px solid var(--bd);background:var(--panel2);color:var(--tx);padding:10px;font:12px monospace;resize:vertical}
+.hint{color:var(--mut);font-size:12px}
+@media(max-width:900px){body{overflow:auto}.app{display:flex;flex-direction:column;height:auto}.main{order:-1}.player{max-height:none}.cats{flex-direction:row}.side-b{display:none}.list{max-height:50vh}}
+</style></head><body>
+<div class="app">
+ <aside class="card"><div class="brand">▶ Эфир</div><div class="cats" id="cats"></div>
+  <div class="side-b"><button class="btn pri" id="imp">＋ Плейлист M3U</button><button class="btn" id="th">Сменить тему</button></div></aside>
+ <section class="card"><input class="search" id="q" placeholder="Поиск канала…"><div class="list" id="list"></div></section>
+ <section class="main">
+  <div class="player" id="pl"><div class="demo" id="demo"></div><video id="v" playsinline style="display:none"></video>
+   <div class="ov" id="ov"><h2 id="oh"></h2><p id="op"></p><div class="bar"><i id="ob"></i></div>
+   <div class="ctl"><button id="mu">🔊</button><button id="pip">PiP</button><button id="fs">⛶ Во весь экран</button></div></div></div>
+  <div class="card epg"><h3>Телепрограмма</h3><div id="epg"></div></div>
+ </section>
+</div>
+<div class="modal" id="m"><div class="mb"><h3>Добавить плейлист</h3>
+ <textarea id="ta" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Новости&quot;,Мой канал&#10;https://example.com/stream.m3u8"></textarea>
+ <input class="search" id="pu" style="margin:0" placeholder="Ссылка на плейлист M3U (https://…)"><input type="file" id="f" accept=".m3u,.m3u8,text/plain"><input class="search" id="eu" style="margin:0" placeholder="Ссылка на телепрограмму XMLTV (.xml или .xml.gz)"><label class="hint">Или файл телепрограммы: <input type="file" id="ef" accept=".xml,.gz"></label>
+ <p class="hint">Ссылки работают в приложении для Windows, в браузере доступны вставка текста и файлы. Каналы берите только из законных источников: своей подписки или официальных потоков.</p>
+ <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="cx">Отмена</button><button class="btn pri" id="ok">Загрузить</button></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const G=[['#6c5ce7','#00b8d9'],['#e17055','#fdcb6e'],['#00b894','#0984e3'],['#d63031','#6c5ce7'],['#e84393','#fd79a8'],['#2d3436','#636e72']];
+let ch=[
+ ['Демо Новости','Новости'],['Демо Мир','Новости'],['Демо Кино','Кино'],['Демо Сериал','Кино'],['Демо Спорт','Спорт'],['Демо Футбол','Спорт'],['Демо Детям','Детям'],['Демо Мульт','Детям'],['Демо Музыка','Музыка'],['Демо Познание','Познавательные']
+].map((a,i)=>({name:a[0],cat:a[1],g:G[i%6]}));
+const T={Новости:['Новости','Итоги дня','Мировая повестка','Ток-шоу'],Кино:['Драма «Ночной рейс»','Комедия','Детектив','Сериал: серия 5'],Спорт:['Прямой эфир','Обзор матчей','Студия','Репортаж'],Детям:['Мультфильм','Сказки','Уроки рисования','Весёлые старты'],Музыка:['Хит-парад','Живой концерт','Клипы','Рок-классика'],Познавательные:['Документальный фильм','Наука просто','Путешествия','Природа']};
+let fav=new Set();try{fav=new Set(JSON.parse(localStorage.getItem('fav')||'[]'))}catch(e){}
+let cat='Все',cur=0,hls=null,hideT;
+const saveFav=()=>{try{localStorage.setItem('fav',JSON.stringify([...fav]))}catch(e){}};
+const EPG={};
+function real(c){const k=EPG[c.id]||EPG[c.name.toLowerCase()];if(!k)return null;const n=Date.now(),i=k.findIndex(p=>p.e>n);if(i<0)return null;const q=k[i],hm=ms=>{const d=new Date(ms);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};return{list:k.slice(i,i+6).map((p,j)=>({t:hm(p.s),n:p.n,now:j==0&&p.s<=n})),pct:Math.max(0,Math.min(100,(n-q.s)/(q.e-q.s)*100))}}
+function parseEpg(x){const d=new DOMParser().parseFromString(x,'text/xml'),nm={};d.querySelectorAll('channel').forEach(c=>{const dn=c.querySelector('display-name');if(dn)nm[c.getAttribute('id')]=dn.textContent.trim().toLowerCase()});const ts=s=>{const m=(s||'').match(/(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)?\s*([+-]\d{4})?/);if(!m)return 0;const z=m[7]?m[7].slice(0,3)+':'+m[7].slice(3):'Z';return Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]||'00'}${z}`)};d.querySelectorAll('programme').forEach(p=>{const id=p.getAttribute('channel'),t=p.querySelector('title'),o={s:ts(p.getAttribute('start')),e:ts(p.getAttribute('stop')),n:t?t.textContent:''};(EPG[id]=EPG[id]||[]).push(o);const n=nm[id];if(n&&n!==id)(EPG[n]=EPG[n]||[]).push(o)});Object.values(EPG).forEach(a=>a.sort((a,b)=>a.s-b.s))}
+function prog(c){const r=real(c);if(r)return r;const t=T[c.cat]||['Программа','Передача','Эфир','Шоу'];let h=[...c.name].reduce((a,x)=>a+x.charCodeAt(0),0);const d=new Date(),H=d.getHours(),out=[];
+ for(let i=0;i<5;i++){const s=H+i;out.push({t:String(s%24).padStart(2,'0')+':00',n:t[(h+s)%t.length],now:i==0})}
+ return{list:out,pct:(d.getMinutes()*60+d.getSeconds())/36}}
+const vis=()=>ch.map((c,i)=>({c,i})).filter(({c})=>(cat=='Все'||(cat=='★ Избранное'?fav.has(c.name):c.cat==cat))&&c.name.toLowerCase().includes($('q').value.toLowerCase()));
+function cats(){const s=['Все','★ Избранное',...new Set(ch.map(c=>c.cat))];$('cats').innerHTML='';s.forEach(n=>{const b=document.createElement('button');b.className='cat'+(n==cat?' on':'');b.textContent=n;b.onclick=()=>{cat=n;cats();list()};$('cats').append(b)})}
+function list(){const L=$('list');L.innerHTML='';vis().forEach(({c,i})=>{const p=prog(c),d=document.createElement('div');d.className='ch'+(i==cur?' on':'');
+ d.innerHTML=`<div class="logo" style="background:linear-gradient(135deg,${c.g[0]},${c.g[1]})">${c.name.replace('Демо ','').slice(0,2).toUpperCase()}</div><div class="ci"><div class="cn"></div><div class="cp"></div><div class="bar"><i style="width:${p.pct}%"></i></div></div><button class="star${fav.has(c.name)?' on':''}">★</button>`;
+ d.querySelector('.cn').textContent=c.name;if(c.logo){const im=new Image();im.referrerPolicy='no-referrer';im.onload=()=>{const l=d.querySelector('.logo');l.textContent='';l.style.background='#fff';l.append(im)};im.src=c.logo}d.querySelector('.cp').textContent=p.list[0].n;
+ d.querySelector('.star').onclick=e=>{e.stopPropagation();fav.has(c.name)?fav.delete(c.name):fav.add(c.name);saveFav();list()};
+ d.onclick=()=>play(i);L.append(d)})}
+function play(i){cur=i;const c=ch[i],p=prog(c),v=$('v'),dm=$('demo');
+ if(hls){hls.destroy();hls=null}
+ $('oh').textContent=c.name;$('op').textContent=p.list[0].t+' · '+p.list[0].n;$('ob').style.width=p.pct+'%';
+ $('epg').innerHTML=p.list.map(x=>`<div class="pr${x.now?' now':''}"><span class="pt">${x.t}</span><span>${x.n}</span></div>`).join('');
+ if(c.url){dm.style.display='none';v.style.display='block';
+  if(window.Hls&&Hls.isSupported()&&/\.m3u8/.test(c.url)){hls=new Hls();hls.loadSource(c.url);hls.attachMedia(v)}else v.src=c.url;v.play().catch(()=>{})}
+ else{v.pause();v.style.display='none';dm.style.display='grid';dm.style.setProperty('--g1',c.g[0]);dm.style.setProperty('--g2',c.g[1]);dm.innerHTML=`<div><b></b><small>Демо-эфир · добавьте свой плейлист</small></div>`;dm.querySelector('b').textContent=c.name}
+ list();poke()}
+function poke(){$('ov').classList.remove('hide');clearTimeout(hideT);hideT=setTimeout(()=>$('ov').classList.add('hide'),3500)}
+$('pl').onmousemove=poke;$('q').oninput=list;
+$('fs').onclick=()=>document.fullscreenElement?document.exitFullscreen():$('pl').requestFullscreen();
+$('mu').onclick=()=>{const v=$('v');v.muted=!v.muted;$('mu').textContent=v.muted?'🔇':'🔊'};
+$('pip').onclick=()=>{try{$('v').requestPictureInPicture()}catch(e){}};
+$('th').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()=='#0d0f17';r.dataset.theme=d?'light':'dark'};
+document.onkeydown=e=>{if(e.target.tagName=='INPUT'||e.target.tagName=='TEXTAREA')return;const v=vis();const k=v.findIndex(x=>x.i==cur);
+ if(e.key=='ArrowDown'&&v[k+1])play(v[k+1].i);if(e.key=='ArrowUp'&&v[k-1])play(v[k-1].i);if(e.key=='f')$('fs').click();if(e.key=='m')$('mu').click()};
+function parse(t){const out=[];let m=null;t.split(/\r?\n/).forEach(l=>{l=l.trim();if(l.startsWith('#EXTINF')){m={name:(l.split(',').pop()||'Канал').trim(),cat:(l.match(/group-title="([^"]*)"/)||[])[1]||'Без группы',id:(l.match(/tvg-id="([^"]*)"/)||[])[1],logo:(l.match(/tvg-logo="([^"]*)"/)||[])[1]}}else if(l&&!l.startsWith('#')&&m){m.url=l;m.g=G[out.length%6];out.push(m);m=null}});return out}
+$('imp').onclick=()=>$('m').classList.add('on');$('cx').onclick=()=>$('m').classList.remove('on');
+$('f').onchange=e=>{const r=new FileReader();r.onload=()=>$('ta').value=r.result;r.readAsText(e.target.files[0])};
+const F=(window.__TAURI__&&window.__TAURI__.http&&window.__TAURI__.http.fetch)||fetch;
+const gz=s=>new Response(s.pipeThrough(new DecompressionStream('gzip'))).text();
+async function load(u){const r=await F(u);return /\.gz(\?|$)/.test(u)?gz(r.body):r.text()}
+let EF=null;$('ef').onchange=e=>{EF=e.target.files[0]};
+$('ok').onclick=async()=>{$('ok').textContent='Загрузка…';try{const pu=$('pu').value.trim(),eu=$('eu').value.trim();let t=$('ta').value;if(pu)t=await load(pu);const n=parse(t);if(!n.length){alert('Каналы не найдены. Проверьте формат M3U.');return}ch=n;cat='Все';cur=0;if(EF)parseEpg(EF.name.endsWith('.gz')?await gz(EF.stream()):await EF.text());else if(eu)parseEpg(await load(eu));try{localStorage.setItem('src',JSON.stringify({pu,eu}))}catch(e){}$('m').classList.remove('on');cats();play(0)}catch(e){alert('Не удалось загрузить: '+e.message)}finally{$('ok').textContent='Загрузить'}};
+cats();list();play(0);
+try{const s=JSON.parse(localStorage.getItem('src')||'null');if(s&&s.pu){$('pu').value=s.pu;$('eu').value=s.eu||'';$('ok').click()}}catch(e){}
+</script></body></html>
